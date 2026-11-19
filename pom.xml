@@ -90,11 +90,6 @@
 </project>
 
 <!-- 
-BRO, here's your **SE Lab Internal 2 last-minute practical cheat sheet** 🔥
-
-Organized experiment-wise, with the **procedure, commands, Dockerfiles, Jenkins scripts, expected output, and common mistakes**.
-
-Use it as a reference while practising. The most important thing in the exam is remembering the sequence of steps, not memorizing every command character by character.
 
 ## **Experiment 1 — Docker: Single Container**
 
@@ -162,15 +157,38 @@ Open `http://localhost:8080`.
 
 ```
 services:
-  web:
-    image: nginx:alpine
-    ports:
-      - "8080:80"
-    depends_on:
-      - redis
+  mysql:
+    image: mysql:8.0
+    container_name: mysql-db
+    environment:
+      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_DATABASE: library_db
+      MYSQL_USER: library_user
+      MYSQL_PASSWORD: library123
+    volumes:
+      - mysql-data:/var/lib/mysql
 
-  redis:
-    image: redis:alpine
+
+  wordpress:
+    image: wordpress:latest
+    container_name: wordpress-app
+    ports:
+      - "5003:80"
+    environment:
+      WORDPRESS_DB_HOST: mysql:3306
+      WORDPRESS_DB_USER: library_user
+      WORDPRESS_DB_PASSWORD: library123
+      WORDPRESS_DB_NAME: library_db
+    volumes:
+      - wordpress-data:/var/www/html
+    depends_on:
+      - mysql
+
+volumes:
+  mysql-data:
+  wordpress-data:
+
+
 ```
 
 This starts **two containers**: Nginx and Redis. It demonstrates multi-container orchestration, although this particular Nginx image doesn't actually communicate with Redis.
@@ -966,6 +984,9 @@ CMD ["java", "-cp", "app.jar", "shreeyanthd.java_exam_practice.App"]
 ### **Step 6 — Build and run**
 
 ```
+docker compose up -d 
+or
+docker compose up -d --build
 sudo docker build -t java-aws-demo .
 sudo docker run --name java-demo java-aws-demo
 ```
