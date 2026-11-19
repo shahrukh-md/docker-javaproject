@@ -708,6 +708,138 @@ This YAML is an additional exam-ready example; your Week 12 manual primarily use
 docker pull jasonrivers/nagios:latest
 
 docker run --name nagiosdemo -p 8888:80 jasonrivers/nagios:latest
+NAGIOS MONITORING FOR WORDPRESS AND MYSQL USING DOCKER
+1. Launch WordPress and MySQL using Docker Compose
+docker compose up -d
+Check running containers:
+docker ps
+2. Pull and launch Nagios
+docker run -d –name nagios -p 8081:80 jasonrivers/nagios:latest
+Access Nagios:
+http://localhost:8081
+3. Connect Nagios to the Docker Compose network
+Find the network:
+docker network ls
+Connect Nagios to the Compose network:
+docker network connect ai-olms_default nagios
+Verify network connectivity:
+docker network inspect ai-olms_default
+4. Enter the Nagios container
+docker exec -it nagios bash
+test connection:
+curl -I http://wordpress-app
+Check MySQL port:
+/opt/nagios/libexec/check_tcp -H mysql-db -p 3306
+
+6. Create monitoring configuration
+
+nano /opt/nagios/etc/objects/docker.cfg
+
+Add the following configuration:
+
+define host {
+use         linux-server
+host_name   wordpress
+address     wordpress-app
+}
+
+define host {
+use         linux-server
+host_name   mysql
+address     mysql-db
+}
+
+define service {
+use                 generic-service
+host_name           wordpress
+service_description WordPress HTTP
+check_command       check_http
+}
+
+define service {
+use                 generic-service
+host_name           mysql
+service_description MySQL Port
+check_command       check_tcp!3306
+}
+7. Register the configuration file
+
+nano /opt/nagios/etc/nagios.cfg
+
+Add the following line:
+
+cfg_file=/opt/nagios/etc/objects/docker.cfg
+
+Save and exit.
+
+8. Validate Nagios configuration
+
+/opt/nagios/bin/nagios -v /opt/nagios/etc/nagios.cfg
+
+Check for:
+
+Total Errors: 0
+
+9. Restart Nagios
+
+Exit the container:
+exit
+Restart:
+docker restart nagios
+
+10. Monitor through the browser
+Open:
+http://localhost:8081
+Click:
+Hosts → View WordPress and MySQL hosts
+Services → View HTTP and MySQL checks
+Expected status:
+
+WordPress HTTP  → OK
+MySQL Port     → OK
+
+11. Demonstrate alert and recovery
+Stop WordPress:
+docker stop wordpress-app
+Nagios should detect the HTTP failure and display CRITICAL.
+Start WordPress again:
+docker start wordpress-app
+Nagios should return the service status to OK.
+Stop MySQL:
+docker stop mysql-db
+Nagios should detect the database port failure.
+Recover MySQL:
+docker start mysql-db
+The service should return to OK.
+```
+```
+docker exec -it nagios bash
+nano /opt/nagios/etc/objects/docker.cfg
+define host {
+    use         linux-server
+    host_name   wordpress
+    address     wordpress-app
+}
+
+define host {
+    use         linux-server
+    host_name   mysql
+    address     mysql-db
+}
+
+define service {
+    use                 generic-service
+    host_name           wordpress
+    service_description WordPress HTTP
+    check_command       check_http
+}
+
+define service {
+    use                 generic-service
+    host_name           mysql
+    service_description MySQL Port
+    check_command       check_tcp!3306
+}
 ```
 
 Open:
